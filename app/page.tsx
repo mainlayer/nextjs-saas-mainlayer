@@ -191,7 +191,7 @@ export default function HomePage() {
           <span>
             &copy; {new Date().getFullYear()} {APP_NAME}. Built with{' '}
             <a
-              href="https://mainlayer.xyz"
+              href="https://mainlayer.fr"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline"

@@ -49,7 +49,7 @@ Open `.env.local` and fill in the required values:
 
 #### Mainlayer (required)
 
-1. Sign up at [mainlayer.xyz](https://mainlayer.xyz)
+1. Sign up at [mainlayer.fr](https://mainlayer.fr)
 2. Create a **Resource** in the dashboard — this represents your SaaS product
 3. Copy the **API key** and **resource ID**
 
@@ -146,7 +146,7 @@ nextjs-saas-mainlayer/
 
 1. User clicks **Upgrade** on the pricing page or in the upgrade modal
 2. The app calls `POST /api/billing/subscribe` with the user's email and plan ID
-3. That route calls `POST https://api.mainlayer.xyz/pay` and returns a `payment_url`
+3. That route calls `POST https://api.mainlayer.fr/pay` and returns a `payment_url`
 4. The user is redirected to the Mainlayer-hosted checkout page
 5. On success, Mainlayer fires a `payment.completed` webhook to `/api/webhooks/mainlayer`
 6. Subsequent `GET /api/billing/portal` calls hit `GET /entitlements/check` to confirm access
@@ -236,6 +236,6 @@ npm run type-check   # TypeScript type checking
 
 ## Support
 
-- **Mainlayer docs**: [docs.mainlayer.xyz](https://docs.mainlayer.xyz)
+- **Mainlayer docs**: [docs.mainlayer.fr](https://docs.mainlayer.fr)
 - **Next.js docs**: [nextjs.org/docs](https://nextjs.org/docs)
 - **NextAuth docs**: [authjs.dev](https://authjs.dev)

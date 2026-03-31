@@ -5,7 +5,7 @@
  * Create your resources in the Mainlayer dashboard and paste the IDs here
  * (or set them as environment variables).
  *
- * Docs: https://docs.mainlayer.xyz
+ * Docs: https://docs.mainlayer.fr
  */
 
 export interface Plan {

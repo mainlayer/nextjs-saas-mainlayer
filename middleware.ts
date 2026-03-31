@@ -42,7 +42,7 @@ export default auth(async (req: NextRequest & { auth?: { user?: { email?: string
 
     if (payerWallet && resourceId && apiKey) {
       try {
-        const entitlementUrl = new URL('https://api.mainlayer.xyz/entitlements/check')
+        const entitlementUrl = new URL('https://api.mainlayer.fr/entitlements/check')
         entitlementUrl.searchParams.set('resource_id', resourceId)
         entitlementUrl.searchParams.set('payer_wallet', payerWallet)
 

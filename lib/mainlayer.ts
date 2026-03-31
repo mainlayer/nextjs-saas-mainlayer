@@ -4,7 +4,7 @@
  * Mainlayer is the billing infrastructure for this SaaS application.
  * It handles subscriptions, payments, and access entitlements.
  *
- * Docs: https://docs.mainlayer.xyz
+ * Docs: https://docs.mainlayer.fr
  */
 
 // =============================================================================
@@ -42,7 +42,7 @@ class MainlayerClient {
 
   constructor(options: MainlayerClientOptions) {
     this.apiKey = options.apiKey
-    this.baseUrl = options.baseUrl ?? 'https://api.mainlayer.xyz'
+    this.baseUrl = options.baseUrl ?? 'https://api.mainlayer.fr'
   }
 
   private async request<T>(
