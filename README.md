@@ -2,7 +2,7 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyourorg%2Fnextjs-saas-mainlayer&env=MAINLAYER_API_KEY,MAINLAYER_RESOURCE_ID,AUTH_SECRET,GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET&envDescription=See%20.env.example%20for%20all%20required%20variables&project-name=my-saas&repository-name=my-saas)
 
-A production-ready Next.js 15 SaaS starter wired to **Mainlayer** — payment infrastructure for modern apps. Clone it, set two env vars, and you have a fully working SaaS with auth, subscription billing, and an app dashboard.
+A production-ready Next.js 15 SaaS starter with **Mainlayer** payment infrastructure. Everything you need to launch: auth, 3-tier pricing, subscriptions, billing portal, usage dashboard, and webhooks. Clone → configure → run.
 
 ---
 
@@ -15,23 +15,34 @@ A production-ready Next.js 15 SaaS starter wired to **Mainlayer** — payment in
 | Billing | Mainlayer — `POST /pay` checkout, `GET /entitlements/check` gating |
 | UI | Tailwind CSS + shadcn/ui components |
 | Middleware | Route-level auth + Mainlayer entitlement checks |
+| Database | Prisma ORM + SQLite (prod: PostgreSQL) |
 | Webhooks | `payment.completed`, `subscription.renewed`, `subscription.cancelled` |
+| Testing | Jest unit tests for billing logic |
 
-### Pages
+### Routes
 
-- `/` — Marketing landing page
-- `/pricing` — Three-tier pricing table
+**Public**
+- `/` — Marketing landing page with feature highlights
+- `/pricing` — Three-tier pricing table (Free, Pro, Enterprise)
 - `/login` — OAuth sign-in
 - `/register` — OAuth sign-up
-- `/dashboard` — Main app dashboard with subscription status
-- `/billing` — Full billing management page
-- `/settings` — Account and billing settings
+
+**Protected** (auth required)
+- `/dashboard` — Main app dashboard with subscription status & usage stats
+- `/dashboard/billing` — Billing management (plan, invoice history, portal)
+- `/dashboard/settings` — Account and subscription settings
+
+**API**
+- `POST /api/billing/subscribe` — Initiate checkout
+- `GET /api/billing/status` — Check subscription status
+- `GET /api/billing/portal` — Redirect to billing portal
+- `POST /api/webhooks/mainlayer` — Webhook receiver (verify signature + dispatch)
 
 ---
 
-## Quickstart
+## Quickstart (5 minutes)
 
-### 1. Clone
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/yourorg/nextjs-saas-mainlayer.git
@@ -39,30 +50,28 @@ cd nextjs-saas-mainlayer
 npm install
 ```
 
-### 2. Configure environment variables
+### 2. Set environment variables
 
 ```bash
 cp .env.example .env.local
 ```
 
-Open `.env.local` and fill in the required values:
+Fill in the required values. **Minimum** for a working SaaS:
 
 #### Mainlayer (required)
 
-1. Sign up at [mainlayer.fr](https://mainlayer.fr)
-2. Create a **Resource** in the dashboard — this represents your SaaS product
-3. Copy the **API key** and **resource ID**
+Get your free API key at [mainlayer.fr](https://mainlayer.fr).
 
 ```env
 MAINLAYER_API_KEY=ml_live_xxxxxxxxxxxxxxxxxxxx
 MAINLAYER_RESOURCE_ID=res_xxxxxxxxxxxxxxxxxxxx
+MAINLAYER_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxx
 ```
 
 #### NextAuth (required)
 
-Generate a random secret:
-
 ```bash
+# Generate a random secret
 openssl rand -base64 32
 ```
 
@@ -72,22 +81,21 @@ AUTH_SECRET=<paste output here>
 
 #### GitHub OAuth (required for GitHub sign-in)
 
-1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
-2. Create a new OAuth App
-3. Set **Authorization callback URL** to `http://localhost:3000/api/auth/callback/github`
+1. [Create a GitHub OAuth App](https://github.com/settings/developers)
+2. Set **Authorization callback URL** to `http://localhost:3000/api/auth/callback/github`
 
 ```env
 GITHUB_CLIENT_ID=your_client_id
 GITHUB_CLIENT_SECRET=your_client_secret
 ```
 
-### 3. Run locally
+### 3. Run
 
 ```bash
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and sign in. You now have a fully working SaaS with auth, billing, and a dashboard.
 
 ---
 
@@ -197,45 +205,151 @@ Users without an active Mainlayer entitlement will be redirected to `/billing`.
 
 ---
 
+---
+
+## Testing
+
+Run the test suite to verify billing logic:
+
+```bash
+npm test
+```
+
+Tests cover:
+- Subscription creation and updates
+- Webhook signature verification
+- Entitlement checks
+- Plan transitions (free → paid, paid → downgrade)
+
+---
+
 ## Deploying to Vercel
 
-1. Click the **Deploy** button at the top of this README
+1. Click **Deploy** at the top of this README, or use `vercel` CLI
 2. Connect your GitHub repo
-3. Add environment variables in the Vercel dashboard (see `.env.example`)
-4. Set the **Authorization callback URL** on your GitHub OAuth app to:
-   `https://your-app.vercel.app/api/auth/callback/github`
-5. Update `MAINLAYER_WEBHOOK_SECRET` with the endpoint registered in the Mainlayer dashboard
+3. Add all environment variables from `.env.example` in the Vercel dashboard
+4. Update GitHub OAuth callback URL to `https://your-app.vercel.app/api/auth/callback/github`
+5. Register webhook with Mainlayer: `https://your-app.vercel.app/api/webhooks/mainlayer`
+
+The SaaS will be live at your Vercel URL with full billing enabled.
+
+---
+
+## Customizing plans
+
+Edit `lib/plans.ts` to change pricing, features, or add tiers:
+
+```typescript
+export const PLAN_PRO: Plan = {
+  id: 'pro',
+  name: 'Pro',
+  price: 29,
+  priceLabel: '$29',
+  billingPeriod: 'per month',
+  mainlayerResourceId: process.env.MAINLAYER_PRO_RESOURCE_ID,
+  mainlayerPlanId: 'plan_pro',
+  features: [
+    'Unlimited projects',
+    '100 GB storage',
+    'Priority support',
+    // Add your features here
+  ],
+  cta: 'Upgrade to Pro',
+  highlighted: true,
+  badge: 'Most popular',
+}
+```
+
+Create the corresponding resources in [Mainlayer dashboard](https://mainlayer.fr/dashboard), then add env vars:
+
+```env
+MAINLAYER_PRO_PLAN_ID=plan_pro
+MAINLAYER_ENTERPRISE_PLAN_ID=plan_enterprise
+```
+
+---
+
+## Billing logic walkthrough
+
+### Free plan
+- No Mainlayer API call needed
+- Users gain immediate access to all "free" routes
+- Can upgrade anytime from `/billing`
+
+### Paid plans (Pro, Enterprise)
+1. User clicks "Upgrade" → `POST /api/billing/subscribe`
+2. Backend calls `POST https://api.mainlayer.fr/pay`
+3. Mainlayer returns `payment_url` → user is redirected
+4. User completes payment on Mainlayer
+5. Mainlayer fires webhook to `POST /api/webhooks/mainlayer`
+6. Webhook verifies HMAC-SHA256 signature and updates local subscription state
+7. Next `GET /api/billing/status` check confirms access
+
+### Feature gating
+Routes that require a paid plan are listed in `middleware.ts`:
+
+```typescript
+const PAID_ROUTES = [
+  '/dashboard/analytics',
+  '/dashboard/team',
+]
+```
+
+Users without an active Mainlayer entitlement are redirected to `/billing`.
 
 ---
 
 ## Available scripts
 
 ```bash
-npm run dev          # Start development server
+npm run dev          # Start dev server on :3000
 npm run build        # Production build
 npm run start        # Start production server
 npm run lint         # ESLint
 npm run type-check   # TypeScript type checking
+npm test             # Run Jest tests
 ```
 
 ---
 
-## Customisation
+## Production checklist
 
-| What | Where |
-|------|-------|
-| App name & description | `lib/constants.ts` → `APP_NAME`, `APP_DESCRIPTION` |
-| Plan features & pricing copy | `lib/constants.ts` → `PLANS` |
-| Mainlayer plan IDs | `lib/plans.ts` + environment variables |
-| Auth providers | `lib/auth.ts` |
-| Paid route list | `middleware.ts` → `PAID_ROUTES` |
-| Landing page content | `app/page.tsx` |
-| Dashboard stats | `app/(dashboard)/dashboard/page.tsx` |
+- [ ] Set a strong `AUTH_SECRET` (use `openssl rand -base64 32`)
+- [ ] Configure `NEXTAUTH_URL` for your production domain
+- [ ] Add `MAINLAYER_WEBHOOK_SECRET` from your Mainlayer dashboard
+- [ ] Update `NEXT_PUBLIC_SITE_URL` to your domain
+- [ ] Test webhook delivery with Mainlayer's webhook tester
+- [ ] Set up email notifications for billing events (optional)
+- [ ] Configure CORS properly for frontend requests
+- [ ] Review and test all three plan transitions (free → pro, pro → enterprise, etc.)
+
+---
+
+## Troubleshooting
+
+**"Unauthorized" when signing in**
+- Check `AUTH_SECRET` is set and matches across all instances
+- Verify GitHub OAuth credentials in `.env.local`
+
+**"No Mainlayer API key" error**
+- Ensure `MAINLAYER_API_KEY` is set in `.env.local`
+- Check it's not wrapped in quotes or has extra spaces
+
+**Webhook not firing**
+- Verify webhook URL is registered in [Mainlayer dashboard](https://docs.mainlayer.fr/webhooks)
+- Check `MAINLAYER_WEBHOOK_SECRET` matches your registered endpoint
+- Use Mainlayer's webhook tester to debug
+
+**Plan not updating after payment**
+- Check webhook logs in `/api/webhooks/mainlayer` response
+- Verify payment actually completed on Mainlayer
+- Try clicking "Refresh entitlements" from the dashboard
 
 ---
 
 ## Support
 
-- **Mainlayer docs**: [docs.mainlayer.fr](https://docs.mainlayer.fr)
-- **Next.js docs**: [nextjs.org/docs](https://nextjs.org/docs)
-- **NextAuth docs**: [authjs.dev](https://authjs.dev)
+- **Mainlayer docs**: https://docs.mainlayer.fr
+- **Mainlayer API**: https://api.mainlayer.fr
+- **Next.js docs**: https://nextjs.org/docs
+- **NextAuth docs**: https://authjs.dev
